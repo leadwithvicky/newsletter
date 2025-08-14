@@ -1,0 +1,59 @@
+"use client";
+import { useState } from "react";
+import dynamic from "next/dynamic";
+import axios from "axios";
+
+const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+
+export default function CreateNewsletter() {
+  const [form, setForm] = useState({ title: "", description: "", author: "", content: "", imageUrl: "" });
+  const [uploading, setUploading] = useState(false);
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const api = axios.create({ baseURL: "http://localhost:5000/api" });
+  api.interceptors.request.use((config) => {
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  });
+
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleImage = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const data = new FormData();
+    data.append('image', file);
+    const res = await api.post('/uploads', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    setForm(prev => ({ ...prev, imageUrl: res.data.url }));
+    setUploading(false);
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    await api.post('/newsletters', form);
+    window.location.href = '/admin/dashboard';
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Create Newsletter</h1>
+      <form onSubmit={submit} className="space-y-3">
+        <input className="w-full border p-2 rounded" name="title" placeholder="Title" onChange={handleChange} />
+        <input className="w-full border p-2 rounded" name="author" placeholder="Author" onChange={handleChange} />
+        <textarea className="w-full border p-2 rounded" name="description" placeholder="Short Description" onChange={handleChange} />
+        <div className="w-full">
+          <label className="block text-sm mb-1">Content</label>
+          <ReactQuill theme="snow" value={form.content} onChange={(val)=>setForm(prev=>({...prev, content: val}))} />
+        </div>
+        <div className="space-y-2">
+          <input type="file" accept="image/*" onChange={handleImage} />
+          {uploading ? <p>Uploading...</p> : form.imageUrl && <img src={form.imageUrl} alt="preview" className="max-h-48 rounded" />}
+        </div>
+        <button className="bg-black text-white px-4 py-2 rounded" type="submit">Save</button>
+      </form>
+    </div>
+  );
+}
+
+
