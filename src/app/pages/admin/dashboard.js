@@ -1,59 +1,111 @@
-"use client";
-import { useEffect, useState } from "react";
-import axios from "axios";
-import Link from "next/link";
+'use client';
 
-export default function Dashboard() {
-  const [items, setItems] = useState([]);
-  const [error, setError] = useState("");
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const api = axios.create({ baseURL: "http://localhost:5000/api" });
-  api.interceptors.request.use((config) => {
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-  });
+export default function AdminDashboard() {
+  const [newsletters, setNewsletters] = useState([]);
+  const [subscribers, setSubscribers] = useState([]);
+  const [stats, setStats] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  const load = async () => {
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
     try {
-      const res = await api.get('/newsletters');
-      setItems(res.data);
-    } catch {
-      setError('Failed to load');
+      const [newslettersRes, subscribersRes, statsRes] = await Promise.all([
+        fetch('http://localhost:5000/api/newsletters'),
+        fetch('http://localhost:5000/api/subscribers'),
+        fetch('http://localhost:5000/api/subscribers/stats')
+      ]);
+
+      const newslettersData = await newslettersRes.json();
+      const subscribersData = await subscribersRes.json();
+      const statsData = await statsRes.json();
+
+      setNewsletters(newslettersData);
+      setSubscribers(subscribersData);
+      setStats(statsData);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const remove = async (id) => {
-    if (!confirm('Delete this newsletter?')) return;
-    await api.delete(`/newsletters/${id}`);
-    await load();
-  };
-
-  useEffect(() => { load(); }, []);
+  if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <Link href="/admin/create" className="bg-black text-white px-4 py-2 rounded">Create</Link>
+    <div className="container mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+      
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-blue-100 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold">Total Newsletters</h3>
+          <p className="text-2xl">{newsletters.length}</p>
+        </div>
+        <div className="bg-green-100 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold">Active Subscribers</h3>
+          <p className="text-2xl">{stats.active || 0}</p>
+        </div>
+        <div className="bg-yellow-100 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold">Total Subscribers</h3>
+          <p className="text-2xl">{stats.total || 0}</p>
+        </div>
+        <div className="bg-purple-100 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold">Unsubscribed</h3>
+          <p className="text-2xl">{stats.unsubscribed || 0}</p>
+        </div>
       </div>
-      {error && <p className="text-red-600">{error}</p>}
-      <ul className="space-y-2">
-        {items.map((n)=> (
-          <li key={n._id} className="border rounded p-4 flex items-center justify-between">
-            <div>
-              <div className="font-semibold">{n.title}</div>
-              <div className="text-sm text-gray-500">{new Date(n.date).toLocaleString()}</div>
-            </div>
-            <div className="space-x-2">
-              <Link href={`/admin/edit/${n._id}`} className="px-3 py-1 border rounded">Edit</Link>
-              <button onClick={()=>remove(n._id)} className="px-3 py-1 border rounded text-red-600">Delete</button>
-            </div>
-          </li>
-        ))}
-      </ul>
+
+      {/* Actions */}
+      <div className="mb-6">
+        <Link href="/admin/create" className="bg-blue-500 text-white px-4 py-2 rounded mr-2">
+          Create Newsletter
+        </Link>
+        <Link href="/admin/schedule" className="bg-green-500 text-white px-4 py-2 rounded">
+          Schedule Newsletter
+        </Link>
+      </div>
+
+      {/* Newsletters List */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-4">Recent Newsletters</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white">
+            <thead>
+              <tr>
+                <th className="py-2 px-4 border-b">Title</th>
+                <th className="py-2 px-4 border-b">Status</th>
+                <th className="py-2 px-4 border-b">Date</th>
+                <th className="py-2 px-4 border-b">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {newsletters.slice(0, 5).map(newsletter => (
+                <tr key={newsletter._id}>
+                  <td className="py-2 px-4 border-b">{newsletter.title}</td>
+                  <td className="py-2 px-4 border-b">{newsletter.status || 'draft'}</td>
+                  <td className="py-2 px-4 border-b">
+                    {new Date(newsletter.date || newsletter.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="py-2 px-4 border-b">
+                    <Link href={`/admin/edit/${newsletter._id}`} className="text-blue-500 mr-2">
+                      Edit
+                    </Link>
+                    <Link href={`/admin/analytics/${newsletter._id}`} className="text-green-500">
+                      Analytics
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
-
-

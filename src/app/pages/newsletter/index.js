@@ -7,6 +7,16 @@ export default function NewsletterList({ newsletters }) {
       {newsletters.length === 0 && <p>No newsletters available.</p>}
 
       <ul>
+      <form onSubmit={handleSubscribe} style={{ marginTop: "20px" }}>
+        <input
+          type="email"
+          placeholder="Enter Your Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <button type="submit">Subscribe</button>
+      </form>
         {newsletters.map((item) => (
           <li key={item._id} style={{ marginBottom: "10px" }}>
             <Link href={`/newsletter/${item._id}`}>
