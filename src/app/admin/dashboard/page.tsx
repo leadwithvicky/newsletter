@@ -39,68 +39,89 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return (
+    <div className="max-w-5xl mx-auto p-6 bg-white text-black">
+      <div className="animate-pulse space-y-4">
+        <div className="h-8 bg-gray-200 rounded w-1/3" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-24 bg-gray-200 rounded" />
+          ))}
+        </div>
+        <div className="h-64 bg-gray-200 rounded" />
+      </div>
+    </div>
+  );
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+    <div className="max-w-6xl mx-auto p-6 bg-white text-black">
+      <h1 className="text-3xl font-extrabold mb-6 text-black">Admin Dashboard</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-blue-100 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold">Total Newsletters</h3>
-          <p className="text-2xl">{newsletters.length}</p>
+        <div className="rounded-xl p-4 bg-[#FFF8E1] border border-[#8B4513]/30">
+          <div className="text-sm">Total Newsletters</div>
+          <div className="text-3xl font-bold">{newsletters.length}</div>
         </div>
-        <div className="bg-green-100 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold">Active Subscribers</h3>
-          <p className="text-2xl">{stats.active || 0}</p>
+        <div className="rounded-xl p-4 bg-[#FFF8E1] border border-[#8B4513]/30">
+          <div className="text-sm">Active Subscribers</div>
+          <div className="text-3xl font-bold">{stats.active || 0}</div>
         </div>
-        <div className="bg-yellow-100 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold">Total Subscribers</h3>
-          <p className="text-2xl">{stats.total || 0}</p>
+        <div className="rounded-xl p-4 bg-[#FFF8E1] border border-[#8B4513]/30">
+          <div className="text-sm">Total Subscribers</div>
+          <div className="text-3xl font-bold">{stats.total || 0}</div>
         </div>
-        <div className="bg-purple-100 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold">Unsubscribed</h3>
-          <p className="text-2xl">{stats.unsubscribed || 0}</p>
+        <div className="rounded-xl p-4 bg-[#FFF8E1] border border-[#8B4513]/30">
+          <div className="text-sm">Unsubscribed</div>
+          <div className="text-3xl font-bold">{stats.unsubscribed || 0}</div>
         </div>
       </div>
 
-      <div className="mb-6">
-        <Link href="/admin/create" className="bg-blue-500 text-white px-4 py-2 rounded mr-2">
+      <div className="mb-6 flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Recent Newsletters</h2>
+        <Link href="/admin/create" className="vt-btn vt-btn-cta">
           Create Newsletter
         </Link>
       </div>
 
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-4">Recent Newsletters</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white">
-            <thead>
-              <tr>
-                <th className="py-2 px-4 border-b">Title</th>
-                <th className="py-2 px-4 border-b">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {newsletters.slice(0, 5).map((newsletter) => (
-                <tr key={newsletter._id}>
-                  <td className="py-2 px-4 border-b">{newsletter.title}</td>
-                  <td className="py-2 px-4 border-b">
-                    {new Date(newsletter.date || newsletter.createdAt).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {newsletters.slice(0, 6).map((n, i) => (
+          <div key={n._id} className="rounded-xl bg-white border border-[#8B4513]/30 shadow-sm hover:shadow-md transition">
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold truncate pr-2">{n.title}</h3>
+                <span className="text-xs text-gray-600">{new Date(n.date || n.createdAt).toLocaleDateString()}</span>
+              </div>
+              <p className="text-sm text-gray-700 mt-1 line-clamp-2">{n.description}</p>
+              <div className="mt-3 flex gap-3">
+                <Link href={`/newsletter/${n._id}`} className="text-[#B7412E] text-sm">View</Link>
+                <Link href={`/admin/edit/${n._id}`} className="text-[#7A8854] text-sm">Edit</Link>
+                <button onClick={() => (async () => {
+                  if (!confirm('Delete this newsletter?')) return;
+                  try {
+                    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                    const res = await fetch(`${API_BASE}/api/newsletters/${n._id}`, { method: 'DELETE', headers: token ? { Authorization: `Bearer ${token}` } : {} });
+                    if (!res.ok) throw new Error('Delete failed');
+                    setNewsletters(prev => prev.filter((x:any) => x._id !== n._id));
+                  } catch (e) { alert('Failed to delete'); }
+                })()} className="text-[#B7412E] text-sm">Delete</button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Subscribers ({subscribers.length})</h2>
-        <ul>
-          {subscribers.slice(0, 5).map((s) => (
-            <li key={s._id}>{s.email} — {s.status}</li>
-          ))}
-        </ul>
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-3">Recent Subscribers ({subscribers.length})</h2>
+        <div className="rounded-xl bg-white border border-[#8B4513]/30 shadow-sm">
+          <div className="divide-y">
+            {subscribers.slice(0, 8).map((s: any) => (
+              <div key={s._id} className="p-3 flex items-center justify-between">
+                <span className="font-mono text-sm">{s.email}</span>
+                <span className="text-xs px-2 py-1 rounded-full bg-[#FFF8E1] text-black border border-[#8B4513]/30">{s.status}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Link from "next/link";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,10 +25,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <header className="bg-[#FFF8E1] text-black border-b border-[#8B4513]/30">
+          <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+            <Link href="/" className="font-semibold">VisionTech</Link>
+            <Link href="/admin" className="px-3 py-1.5 rounded-full text-black bg-gradient-to-r from-[#FFD700] via-[#FF6F00] to-[#32CD32] hover:to-[#32CD32]">Admin</Link>
+          </div>
+        </header>
+        <main>
+          {children}
+        </main>
       </body>
     </html>
   );
