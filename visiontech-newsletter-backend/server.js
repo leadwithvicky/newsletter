@@ -25,9 +25,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const newsletterRoutes = require('./routes/newsletterRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const subscriberRoutes = require('./routes/subscriberRoutes');
 app.use('/api/newsletters', newsletterRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/subscribers', subscriberRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

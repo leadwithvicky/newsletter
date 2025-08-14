@@ -1,5 +1,7 @@
 const express = require('express');
 const Newsletter = require('../models/Newsletter');
+const Subscriber = require('../models/Subscriber');
+const emailService = require('../services/emailService');
 const auth = require('../middleware/auth');
 const router = express.Router();
 
@@ -30,6 +32,19 @@ router.post('/', auth, async (req, res) => {
     const { title, description, content, author, imageUrl } = req.body;
     if (!title) return res.status(400).json({ message: 'Title is required' });
     const created = await Newsletter.create({ title, description, content, author, imageUrl });
+
+    // Fire-and-forget email sending to active subscribers
+    ;(async () => {
+      try {
+        const subscribers = await Subscriber.find({ status: 'active' }, { email: 1, unsubscribeToken: 1 });
+        if (subscribers.length > 0) {
+          await emailService.sendNewsletter(created, subscribers);
+        }
+      } catch (e) {
+        console.error('Email send error:', e.message);
+      }
+    })();
+
     res.status(201).json(created);
   } catch (err) {
     res.status(500).json({ message: 'Server Error' });
@@ -62,5 +77,6 @@ router.delete('/:id', auth, async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 });
+
 
 module.exports = router;
