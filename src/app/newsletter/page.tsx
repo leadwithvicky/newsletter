@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import Breadcrumbs from '@/src/components/Breadcrumbs';
+import Breadcrumbs from '@/components/Breadcrumbs';
 
 type Newsletter = {
   _id: string;

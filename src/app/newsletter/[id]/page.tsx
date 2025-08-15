@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Breadcrumbs from '@/src/components/Breadcrumbs';
+import Breadcrumbs from '@/components/Breadcrumbs';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
