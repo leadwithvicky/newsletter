@@ -14,14 +14,37 @@ type Newsletter = {
   imageUrl?: string;
 };
 
+type EditorLike = {
+  getHtml: () => string;
+  getCss: () => string;
+  setComponents: (html: string) => void;
+  setStyle: (css: string) => void;
+  on: (eventName: string, cb: (...args: unknown[]) => void) => void;
+  AssetManager: { add: (asset: { src: string }) => void };
+  destroy?: () => void;
+};
+
+type GrapesJs = {
+  init: (config: {
+    container: HTMLElement;
+    height?: string;
+    fromElement?: boolean;
+    storageManager?: boolean;
+    assetManager?: { upload: string; uploadName: string };
+  }) => EditorLike;
+};
+
 export default function EditNewsletterPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams<{ id: string | string[] }>();
   const router = useRouter();
-  const id = params?.id as string;
+  const idParam = params?.id;
+  const id = Array.isArray(idParam) ? (idParam[0] || '') : (idParam || '');
 
   const [form, setForm] = useState({ title: '', description: '', author: '', imageUrl: '' });
   const [loading, setLoading] = useState(true);
-  const editorRef = useRef<any>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [rawContent, setRawContent] = useState<string>('');
+  const editorRef = useRef<EditorLike | null>(null);
   const editorElRef = useRef<HTMLDivElement | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -41,25 +64,65 @@ export default function EditNewsletterPage() {
     if (!authChecked || !id) return;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/newsletters/${id}`, { cache: 'no-store' });
-        const data: Newsletter & { subtitle?: string } = await res.json();
+        setLoadError(null);
+        // Try configured base first, then fallback to same-origin
+        const baseForGet = API_BASE.replace(/\/+$/, '');
+        const candidates = Array.from(new Set([
+          `${baseForGet}/api/newsletters/${id}`,
+          `/api/newsletters/${id}`
+        ]));
+        if (process.env.NODE_ENV !== 'production') {
+          console.debug('[Edit] params', params, 'resolved id', id, 'candidates', candidates);
+        }
+
+        let data: (Newsletter & { subtitle?: string }) | null = null;
+        for (const url of candidates) {
+          try {
+            const res = await fetch(url, { cache: 'no-store' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            data = await res.json();
+            break;
+          } catch (err) {
+            if (process.env.NODE_ENV !== 'production') {
+              console.debug('[Edit] fetch failed', url, err);
+            }
+            // try next candidate
+          }
+        }
+
+        if (!data) throw new Error('Failed to load newsletter');
         setForm({
           title: data.title || '',
-          description: (data as any).description || (data as any).subtitle || '',
+          description: data.description || (data as { subtitle?: string }).subtitle || '',
           author: data.author || '',
           imageUrl: data.imageUrl || ''
         });
+        setRawContent(data.content || '');
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Failed to load newsletter';
+        setLoadError(msg);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id, authChecked, params]);
 
-        // Ensure GrapesJS CSS is loaded at runtime to avoid Next/Turbopack CSS parsing issues
-        const id = 'grapesjs-css';
-        if (typeof document !== 'undefined' && !document.getElementById(id)) {
+  // Initialize GrapesJS only after the container is mounted and loading is done
+  useEffect(() => {
+    if (!authChecked || loading) return;
+    if (!editorElRef.current) return;
+    if (editorRef.current) return; // already initialized
+    (async () => {
+      try {
+        const grapesCssId = 'grapesjs-css';
+        if (typeof document !== 'undefined' && !document.getElementById(grapesCssId)) {
           const link = document.createElement('link');
-          link.id = id;
+          link.id = grapesCssId;
           link.rel = 'stylesheet';
           link.href = 'https://unpkg.com/grapesjs/dist/css/grapes.min.css';
           document.head.appendChild(link);
         }
-        const grapesjs = (await import('grapesjs')).default as any;
+        const grapesjs: GrapesJs = (await import('grapesjs')).default as unknown as GrapesJs;
         const editor = grapesjs.init({
           container: editorElRef.current!,
           height: '70vh',
@@ -68,31 +131,31 @@ export default function EditNewsletterPage() {
           assetManager: { upload: `${API_BASE}/api/uploads`, uploadName: 'image' },
         });
 
-        // Load content: extract <style>...</style> and HTML if present
-        const raw = data.content || '';
+        // Parse and set initial content
+        const raw = rawContent || '';
         const cssMatch = raw.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
         const css = cssMatch ? cssMatch[1] : '';
         const html = raw.replace(/<style[^>]*>[\s\S]*?<\/style>/i, '');
         editor.setComponents(html || '<section style="padding:20px"><h1>Edit your newsletter</h1></section>');
         if (css) editor.setStyle(css);
 
-        // Ensure assets added are absolute URLs
-        editor.on('asset:upload:response', (res: any) => {
-          const url = res?.url;
-          if (url) {
-            const absoluteUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
+        editor.on('asset:upload:response', (res: unknown) => {
+          const maybeUrl = typeof res === 'object' && res !== null && 'url' in res ? (res as { url?: unknown }).url : undefined;
+          if (typeof maybeUrl === 'string') {
+            const absoluteUrl = maybeUrl.startsWith('http') ? maybeUrl : `${API_BASE}${maybeUrl}`;
             editor.AssetManager.add({ src: absoluteUrl });
           }
         });
 
         editorRef.current = editor;
-      } catch (e) {
-        // noop
-      } finally {
-        setLoading(false);
+      } catch (err) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('[Edit] GrapesJS init failed', err);
+        }
+        setLoadError('Editor failed to initialize');
       }
     })();
-  }, [id, authChecked]);
+  }, [authChecked, loading, rawContent]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -101,18 +164,48 @@ export default function EditNewsletterPage() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     const editor = editorRef.current;
+    if (!editor) {
+      alert('Editor not ready yet. Please wait a moment and try again.');
+      return;
+    }
     const html = editor?.getHtml?.() || '';
     const css = editor?.getCss?.() || '';
     const content = `<style>${css}</style>${html}`;
 
-    await fetch(`${API_BASE}/api/newsletters/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ ...form, content }),
-    });
+    const baseForPut = API_BASE.replace(/\/+$/, '');
+    const candidates = Array.from(new Set([
+      `${baseForPut}/api/newsletters/${id}`,
+      `/api/newsletters/${id}`
+    ]));
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug('[Edit] save candidates', candidates);
+    }
+
+    let ok = false;
+    for (const url of candidates) {
+      try {
+        const res = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ ...form, content }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        ok = true;
+        break;
+      } catch (err) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.debug('[Edit] save failed', url, err);
+        }
+        // try next
+      }
+    }
+    if (!ok) {
+      alert('Failed to save changes. Please check API connectivity.');
+      return;
+    }
     router.push('/admin/dashboard');
   };
 
@@ -122,6 +215,11 @@ export default function EditNewsletterPage() {
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white text-black">
       <h1 className="text-2xl font-bold mb-4">Edit Newsletter</h1>
+      {loadError && (
+        <div className="mb-4 px-3 py-2 rounded border border-red-300 text-red-700 bg-red-50">
+          {loadError}. Please ensure the API is reachable. If you are running everything on one Next.js app, remove NEXT_PUBLIC_API_BASE_URL or set it to your app origin.
+        </div>
+      )}
       <form onSubmit={save} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <input className="w-full border border-[#8B4513]/30 p-2 rounded" name="title" placeholder="Title" value={form.title} onChange={handleChange} />
