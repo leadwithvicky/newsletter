@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
 // Simple canvas-based particles background (no extra CSS needed)
 function ParticlesCanvas() {

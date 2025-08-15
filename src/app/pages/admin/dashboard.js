@@ -16,9 +16,9 @@ export default function AdminDashboard() {
   const fetchDashboardData = async () => {
     try {
       const [newslettersRes, subscribersRes, statsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/newsletters'),
-        fetch('http://localhost:5000/api/subscribers'),
-        fetch('http://localhost:5000/api/subscribers/stats')
+        fetch((process.env.NEXT_PUBLIC_API_BASE_URL || '') + '/api/newsletters'),
+        fetch((process.env.NEXT_PUBLIC_API_BASE_URL || '') + '/api/subscribers'),
+        fetch((process.env.NEXT_PUBLIC_API_BASE_URL || '') + '/api/subscribers/stats')
       ]);
 
       const newslettersData = await newslettersRes.json();

@@ -31,7 +31,8 @@ export default function NewsletterList({ newsletters }) {
 
 // Fetch newsletters from backend
 export async function getServerSideProps() {
-  const res = await fetch("http://localhost:5000/api/newsletters");
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+  const res = await fetch(`${API_BASE}/api/newsletters`);
   const data = await res.json();
 
   return {

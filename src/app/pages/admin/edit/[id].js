@@ -12,7 +12,7 @@ export default function EditNewsletter() {
   const [form, setForm] = useState({ title: "", description: "", author: "", content: "", imageUrl: "" });
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const api = axios.create({ baseURL: "http://localhost:5000/api" });
+  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api` : '/api' });
   api.interceptors.request.use((config) => {
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;

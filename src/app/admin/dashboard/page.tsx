@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -25,9 +25,9 @@ export default function AdminDashboardPage() {
   const fetchDashboardData = async () => {
     try {
       const [newslettersRes, subscribersRes, statsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/newsletters`),
-        fetch(`${API_BASE}/api/subscribers`),
-        fetch(`${API_BASE}/api/subscribers/stats`),
+        fetch(`${API_BASE}/api/newsletters`, { cache: 'no-store' }),
+        fetch(`${API_BASE}/api/subscribers`, { cache: 'no-store' }),
+        fetch(`${API_BASE}/api/subscribers/stats`, { cache: 'no-store' }),
       ]);
 
       const [newslettersData, subscribersData, statsData] = await Promise.all([
@@ -108,7 +108,10 @@ export default function AdminDashboardPage() {
                     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
                     const res = await fetch(`${API_BASE}/api/newsletters/${n._id}`, { method: 'DELETE', headers: token ? { Authorization: `Bearer ${token}` } : {} });
                     if (!res.ok) throw new Error('Delete failed');
+                    // Remove from local list
                     setNewsletters(prev => prev.filter((x:any) => x._id !== n._id));
+                    // Refresh stats and subscribers silently
+                    fetchDashboardData();
                   } catch (e) { alert('Failed to delete'); }
                 })()} className="text-[#B7412E] text-sm">Delete</button>
               </div>

@@ -13,7 +13,8 @@ export default function AdminLogin() {
     e.preventDefault();
     setError("");
     try {
-      const res = await axios.post("http://localhost:5000/api/admin/login", { email, password });
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+      const res = await axios.post(`${API_BASE}/api/admin/login`, { email, password });
       localStorage.setItem("token", res.data.token);
       router.push("/admin/dashboard");
     } catch (err) {
