@@ -1,5 +1,5 @@
-simport { NextRequest, NextResponse } from 'next/server';
-import { connectDB, Subscriber } from '../../../../lib/newsletterBackend';
+import { NextRequest, NextResponse } from 'next/server';
+import { connectDB, Subscriber } from '../../../../../lib/newsletterBackend';
 export const runtime = 'nodejs';
 
 // GET for email links -> mark unsubscribed and return HTML (unchanged)

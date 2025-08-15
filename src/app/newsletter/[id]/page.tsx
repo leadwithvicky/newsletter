@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Breadcrumbs from '@/src/components/Breadcrumbs';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
@@ -83,6 +84,7 @@ export default function NewsletterDetailPage() {
     <div>
       {/* Header section */}
       <section className="max-w-5xl mx-auto px-6 pt-10">
+        <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Newsletter', href: '/newsletter' }, { label: n.title }]} />
         <h1 className="text-3xl md:text-4xl font-bold leading-tight">{n.title}</h1>
         <div className="mt-2 text-sm" style={{ color: 'var(--vt-muted)' }}>
           {displayDate}

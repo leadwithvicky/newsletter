@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+// Update the import path below to the correct relative path for Breadcrumbs
+import Breadcrumbs from '../../../components/Breadcrumbs';
 import { useRouter } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
@@ -62,6 +64,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white text-black">
+      <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Admin', href: '/admin' }, { label: 'Dashboard' }]} />
       <h1 className="text-3xl font-extrabold mb-6 text-black">Admin Dashboard</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

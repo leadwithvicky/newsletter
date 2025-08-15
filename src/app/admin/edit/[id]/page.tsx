@@ -42,10 +42,10 @@ export default function EditNewsletterPage() {
     (async () => {
       try {
         const res = await fetch(`${API_BASE}/api/newsletters/${id}`, { cache: 'no-store' });
-        const data: Newsletter = await res.json();
+        const data: Newsletter & { subtitle?: string } = await res.json();
         setForm({
           title: data.title || '',
-          description: data.description || '',
+          description: (data as any).description || (data as any).subtitle || '',
           author: data.author || '',
           imageUrl: data.imageUrl || ''
         });

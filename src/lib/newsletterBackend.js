@@ -15,15 +15,7 @@ try {
 }
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-// Avoid static import of optional dependency to prevent build-time module-not-found.
-let sgMail = null;
-try {
-  // Dynamically require only if available at runtime
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  sgMail = require('@sendgrid/mail');
-} catch (_) {
-  sgMail = null;
-}
+// SendGrid removed; using nodemailer only
 
 // ====== DB CONNECTION ======
 const MONGO_URI = process.env.MONGO_URI;
@@ -108,10 +100,7 @@ class EmailService {
     this.initialize();
   }
   initialize() {
-    if (process.env.SENDGRID_API_KEY && sgMail) {
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-      this.useSendGrid = true;
-    } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       this.transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
@@ -130,12 +119,10 @@ class EmailService {
           text: this.generateEmailText(newsletter)
         };
         let result;
-        if (this.useSendGrid && sgMail) {
-          result = await sgMail.send(emailData);
-        } else if (this.transporter) {
+        if (this.transporter) {
           result = await this.transporter.sendMail(emailData);
         } else {
-          throw new Error('No email provider configured');
+          throw new Error('No email transporter configured');
         }
         results.push({ email: subscriber.email, success: true, messageId: result.messageId || 'sent' });
       } catch (error) {
