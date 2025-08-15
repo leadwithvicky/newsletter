@@ -59,8 +59,12 @@ class EmailService {
   }
 
   generateEmailHTML(newsletter, subscriber) {
-    const trackingPixel = `${process.env.BACKEND_URL}/api/track/pixel/${newsletter.trackingPixel}/${subscriber.email}`;
-    const unsubscribeLink = `${process.env.FRONTEND_URL}/unsubscribe/${subscriber.unsubscribeToken}`;
+    const frontendUrl = process.env.FRONTEND_URL;
+    const backendUrl = process.env.BACKEND_URL;
+    const homepageLink = frontendUrl
+      ? `${frontendUrl}/?token=${subscriber.unsubscribeToken}`
+      : `${backendUrl}`;
+    const greeting = subscriber.name ? `Hi ${subscriber.name},` : 'Hello,';
     
     return `
       <!DOCTYPE html>
@@ -84,24 +88,24 @@ class EmailService {
           </div>
           
           <div class="content">
+            <p>${greeting}</p>
             ${newsletter.content}
             ${newsletter.imageUrl ? `<img src="${newsletter.imageUrl}" alt="${newsletter.title}" style="max-width: 100%; height: auto;">` : ''}
           </div>
           
           <div class="footer">
             <p>You're receiving this because you subscribed to VisionTech Newsletter.</p>
-            <p><a href="${unsubscribeLink}">Unsubscribe</a></p>
+            <p><a href="${homepageLink}">Unsubscribe</a></p>
           </div>
         </div>
         
-        <img src="${trackingPixel}" width="1" height="1" style="display:none;">
-      </body>
+        </body>
       </html>
     `;
   }
 
   generateEmailText(newsletter) {
-    return `${newsletter.title}\n\n${newsletter.description}\n\n${newsletter.content}`;
+    return `${newsletter.title}\n\n${newsletter.description || ''}\n\n${newsletter.content}`;
   }
 
   async sendTestEmail(to, subject, content) {

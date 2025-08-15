@@ -37,6 +37,25 @@ router.post('/subscribe', async (req, res) => {
   }
 });
 
+// Unsubscribe from newsletter (GET for email links)
+router.get('/unsubscribe/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    const subscriber = await Subscriber.findOne({ unsubscribeToken: token });
+    if (!subscriber) {
+      return res.status(404).send('<h1>Invalid unsubscribe link</h1>');
+    }
+
+    subscriber.status = 'unsubscribed';
+    await subscriber.save();
+    
+    res.send('<h1>Successfully unsubscribed</h1>');
+  } catch (error) {
+    res.status(500).send('<h1>Server error</h1>');
+  }
+});
+
 // Unsubscribe from newsletter
 router.post('/unsubscribe/:token', async (req, res) => {
   try {
@@ -51,6 +70,20 @@ router.post('/unsubscribe/:token', async (req, res) => {
     await subscriber.save();
     
     res.json({ message: 'Successfully unsubscribed' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Delete subscriber by unsubscribe token (preferred for final removal)
+router.delete('/unsubscribe/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const deleted = await Subscriber.findOneAndDelete({ unsubscribeToken: token });
+    if (!deleted) {
+      return res.status(404).json({ message: 'Invalid unsubscribe link' });
+    }
+    res.json({ message: 'You have been unsubscribed and removed from our mailing list.' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
