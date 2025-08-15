@@ -36,7 +36,7 @@ export default function RootLayout({
         <header className="bg-[#FFF8E1] text-black border-b border-[#8B4513]/30">
           <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
             <Link href="/" className="font-semibold">VisionTech</Link>
-            <Link href="/admin" className="px-3 py-1.5 rounded-full text-black bg-gradient-to-r from-[#FFD700] via-[#FF6F00] to-[#32CD32] hover:to-[#32CD32]">Admin</Link>
+            <Link href="/admin" className="px-3 py-1.5 rounded-full text-black bg-">Admin</Link>
           </div>
         </header>
         <main>

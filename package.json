@@ -10,11 +10,11 @@
   },
   "dependencies": {
     "axios": "^1.11.0",
+    "grapesjs": "^0.21.5",
     "next": "15.4.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-quill": "^2.0.0",
-    "grapesjs": "^0.21.5"
+    "react-quill-new": "^3.6.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

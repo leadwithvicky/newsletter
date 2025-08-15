@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
@@ -10,9 +11,23 @@ export default function CreateNewsletterPage() {
   const editorElRef = useRef<HTMLDivElement | null>(null);
   const initialized = useRef(false);
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const router = useRouter();
+  const [token, setToken] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
+    // Client-side auth guard: require token, else redirect to login
+    const t = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!t) {
+      router.replace('/admin');
+      return;
+    }
+    setToken(t);
+    setAuthChecked(true);
+  }, [router]);
+
+  useEffect(() => {
+    if (!authChecked) return;
     if (initialized.current) return;
     initialized.current = true;
     let editor: any;
@@ -81,7 +96,7 @@ export default function CreateNewsletterPage() {
       try { editor?.destroy?.(); } catch {}
       initialized.current = false;
     };
-  }, []);
+  }, [authChecked]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -132,6 +147,8 @@ export default function CreateNewsletterPage() {
       if (w) { w.document.write(content); w.document.close(); }
     } catch {}
   };
+
+  if (!authChecked) return null;
 
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white text-black">

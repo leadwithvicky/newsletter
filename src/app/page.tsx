@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
@@ -124,6 +125,9 @@ function getCategory(n: Newsletter): string {
 }
 
 export default function HomePage() {
+  const searchParams = useSearchParams();
+  const pendingToken = searchParams.get('token');
+  const [unsubState, setUnsubState] = useState<{ status: 'idle'|'ask'|'working'|'done'|'error'; msg?: string }>({ status: 'idle' });
   const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
   const [visibleCount, setVisibleCount] = useState(9);
   const [loading, setLoading] = useState(true);
@@ -215,6 +219,23 @@ export default function HomePage() {
 
   const categories = ['All', 'AI', 'Cloud', 'DevOps', 'Security', 'General'];
 
+  const confirmUnsubscribe = async () => {
+    if (!pendingToken) return;
+    const userConfirmed = window.confirm('Are you sure you want to unsubscribe?');
+    if (!userConfirmed) return;
+    try {
+      setUnsubState({ status: 'working' });
+      const res = await fetch(`${API_BASE}/api/subscribers/unsubscribe/${pendingToken}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Failed to unsubscribe');
+      setUnsubState({ status: 'done', msg: data.message || 'You have been unsubscribed.' });
+    } catch (err: any) {
+      setUnsubState({ status: 'error', msg: err.message || 'Unsubscribe failed' });
+    }
+  };
+
   return (
     <div className="bg-[#FFF8E1] text-black">
       {/* HERO */}
@@ -224,8 +245,8 @@ export default function HomePage() {
         <div className="relative z-10 max-w-6xl mx-auto px-6 py-20 w-full">
           <div className="flex items-center justify-between gap-4">
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold leading-tight">
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#FFD700] via-[#FF6F00] to-[#32CD32]">
-                🚀 Explore the Future of Tech
+              🚀<span className="block text-transparent bg-clip-text bg-black/80 ">
+                 Explore the Future of Tech
               </span>
               <span className="block mt-2">with VisionTech!</span>
             </h1>
@@ -249,6 +270,29 @@ export default function HomePage() {
               <AnimatedNumber value={Number(stats?.active || 0)} />
             </div>
           </div>
+
+          {/* Inline Unsubscribe CTA if token present */}
+          {pendingToken && (
+            <div className="mt-4 p-3 rounded-xl bg-white/80 border border-[#8B4513]/30 max-w-xl">
+              {unsubState.status === 'done' ? (
+                <div className="text-green-700 text-sm font-medium">{unsubState.msg}</div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="text-sm">This link allows you to unsubscribe from our mailing list.</div>
+                  <button
+                    onClick={confirmUnsubscribe}
+                    disabled={unsubState.status === 'working'}
+                    className="px-4 py-2 rounded-full text-white bg-red-600 hover:bg-red-700 disabled:opacity-70"
+                  >
+                    {unsubState.status === 'working' ? 'Processing…' : 'Unsubscribe'}
+                  </button>
+                </div>
+              )}
+              {unsubState.status === 'error' && (
+                <div className="text-red-600 text-sm mt-2">{unsubState.msg}</div>
+              )}
+            </div>
+          )}
 
           {/* Inline Subscribe Form */}
           <form onSubmit={submitSubscribe} className="mt-6 flex max-w-xl gap-2 bg-white/80 backdrop-blur rounded-full p-1 pl-3 border border-[#8B4513]/30">

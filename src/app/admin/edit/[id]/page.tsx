@@ -23,10 +23,22 @@ export default function EditNewsletterPage() {
   const [loading, setLoading] = useState(true);
   const editorRef = useRef<any>(null);
   const editorElRef = useRef<HTMLDivElement | null>(null);
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const [token, setToken] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    // Auth guard
+    const t = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!t) {
+      router.replace('/admin');
+      return;
+    }
+    setToken(t);
+    setAuthChecked(true);
+  }, [router]);
+
+  useEffect(() => {
+    if (!authChecked || !id) return;
     (async () => {
       try {
         const res = await fetch(`${API_BASE}/api/newsletters/${id}`, { cache: 'no-store' });
@@ -80,7 +92,7 @@ export default function EditNewsletterPage() {
         setLoading(false);
       }
     })();
-  }, [id]);
+  }, [id, authChecked]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -104,6 +116,7 @@ export default function EditNewsletterPage() {
     router.push('/admin/dashboard');
   };
 
+  if (!authChecked) return null;
   if (loading) return <div className="max-w-6xl mx-auto p-6">Loading editor...</div>;
 
   return (
