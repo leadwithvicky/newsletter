@@ -8,8 +8,13 @@ export async function GET() {
     await connectDB();
     const subscribers = await Subscriber.find().sort({ signupDate: -1 });
     return NextResponse.json(subscribers);
-  } catch (error: any) {
-    return NextResponse.json({ message: 'Server error', error: error.message }, { status: 500 });
+  } catch (error) {
+    const errMsg = error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : 'Unknown error';
+    return NextResponse.json({ message: 'Server error', error: errMsg }, { status: 500 });
   }
 }
 
@@ -33,7 +38,8 @@ export async function POST(req: NextRequest) {
 
     const created = await Subscriber.create({ email, name, status: 'active' });
     return NextResponse.json({ message: 'Successfully subscribed', subscriber: created }, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ message: 'Server error', error: error.message }, { status: 500 });
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : (typeof error === 'string' ? error : 'Unknown error');
+    return NextResponse.json({ message: 'Server error', error: errMsg }, { status: 500 });
   }
 }

@@ -29,7 +29,10 @@ export async function POST(req: NextRequest) {
     // Next.js serves files under /public at the root: /uploads/...
     const url = `/uploads/${filename}`;
     return NextResponse.json({ url });
-  } catch (err: any) {
-    return NextResponse.json({ message: 'Upload failed', error: err.message }, { status: 500 });
+  } catch (err) {
+    if (err instanceof Error) {
+      return NextResponse.json({ message: 'Upload failed', error: err.message }, { status: 500 });
+    }
+    return NextResponse.json({ message: 'Upload failed', error: 'Unknown error' }, { status: 500 });
   }
 }

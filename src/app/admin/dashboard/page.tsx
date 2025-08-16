@@ -38,11 +38,16 @@ export default function AdminDashboardPage() {
         statsRes.json(),
       ]);
 
-      setNewsletters(newslettersData || []);
-      setSubscribers(subscribersData || []);
+      // Ensure we always have arrays, even if API returns errors
+      setNewsletters(Array.isArray(newslettersData) ? newslettersData : []);
+      setSubscribers(Array.isArray(subscribersData) ? subscribersData : []);
       setStats(statsData || {});
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      // Set empty arrays on error to prevent slice() errors
+      setNewsletters([]);
+      setSubscribers([]);
+      setStats({});
     } finally {
       setLoading(false);
     }
@@ -94,7 +99,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {newsletters.slice(0, 6).map((n, i) => (
+        {(newsletters || []).slice(0, 6).map((n, i) => (
           <div key={n._id} className="rounded-xl bg-white border border-[#8B4513]/30 shadow-sm hover:shadow-md transition">
             <div className="p-4">
               <div className="flex items-center justify-between">
@@ -112,7 +117,7 @@ export default function AdminDashboardPage() {
                     const res = await fetch(`${API_BASE}/api/newsletters/${n._id}`, { method: 'DELETE', headers: token ? { Authorization: `Bearer ${token}` } : {} });
                     if (!res.ok) throw new Error('Delete failed');
                     // Remove from local list
-                    setNewsletters(prev => prev.filter((x:any) => x._id !== n._id));
+                    setNewsletters(prev => (prev || []).filter((x:any) => x._id !== n._id));
                     // Refresh stats and subscribers silently
                     fetchDashboardData();
                   } catch (e) { alert('Failed to delete'); }
@@ -124,10 +129,10 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-3">Recent Subscribers ({subscribers.length})</h2>
+        <h2 className="text-2xl font-bold mb-3">Recent Subscribers ({(subscribers || []).length})</h2>
         <div className="rounded-xl bg-white border border-[#8B4513]/30 shadow-sm">
           <div className="divide-y">
-            {subscribers.slice(0, 8).map((s: any) => (
+            {(subscribers || []).slice(0, 8).map((s: any) => (
               <div key={s._id} className="p-3 flex items-center justify-between">
                 <span className="font-mono text-sm">{s.email}</span>
                 <span className="text-xs px-2 py-1 rounded-full bg-[#FFF8E1] text-black border border-[#8B4513]/30">{s.status}</span>

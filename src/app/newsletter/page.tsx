@@ -35,9 +35,13 @@ function SubscribeForm() {
       setStatus('ok');
       setMessage('Subscribed successfully!');
       setEmail('');
-    } catch (err: any) {
+    } catch (err) {
       setStatus('error');
-      setMessage(err.message || 'Subscribe failed');
+      if (err instanceof Error) {
+        setMessage(err.message || 'Subscribe failed');
+      } else {
+        setMessage('Subscribe failed');
+      }
     }
   };
 

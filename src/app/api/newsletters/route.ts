@@ -4,18 +4,33 @@ export const runtime = 'nodejs';
 
 export async function GET() {
   try {
+    console.log('[Newsletters] Connecting to database...');
     await connectDB();
+    console.log('[Newsletters] Database connected, fetching newsletters...');
+    
     const newsletters = await Newsletter.find().sort({ date: -1 });
+    console.log('[Newsletters] Found', newsletters.length, 'newsletters');
+    
     return NextResponse.json(newsletters);
   } catch (err) {
-    return NextResponse.json({ message: 'Server Error' }, { status: 500 });
+    console.error('[Newsletters] Error:', err);
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ 
+      message: 'Server Error', 
+      error: message,
+      stack: process.env.NODE_ENV === 'development' && err instanceof Error ? err.stack : undefined
+    }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const auth = requireAuth(req.headers);
-    if (!auth.ok) return NextResponse.json({ message: auth.error.message }, { status: auth.error.status });
+    if (!auth.ok) {
+      const message = auth.error?.message || 'Unauthorized';
+      const status = auth.error?.status || 401;
+      return NextResponse.json({ message }, { status });
+    }
 
     await connectDB();
     const body = await req.json();
@@ -30,8 +45,9 @@ export async function POST(req: NextRequest) {
         if (subscribers.length > 0) {
           await emailService.sendNewsletter(created, subscribers);
         }
-      } catch (e: any) {
-        console.error('Email send error:', e.message);
+      } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'Unknown email error';
+        console.error('Email send error:', errorMessage);
       }
     })();
 

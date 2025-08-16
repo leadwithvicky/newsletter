@@ -5,14 +5,7 @@
 // - Email: sendNewsletter identical behavior to existing emailService
 
 import mongoose from 'mongoose';
-// Dynamically require jsonwebtoken to avoid build-time resolution failures
-let jwtLib = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  jwtLib = require('jsonwebtoken');
-} catch (_) {
-  jwtLib = null;
-}
+import jwtLib from 'jsonwebtoken';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 // SendGrid removed; using nodemailer only
@@ -31,6 +24,10 @@ export async function connectDB() {
   if (!cached.promise) {
     cached.promise = mongoose.connect(MONGO_URI, {
       bufferCommands: false,
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
     }).then((m) => m);
   }
   cached.conn = await cached.promise;
